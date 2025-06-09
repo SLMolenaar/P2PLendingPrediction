@@ -1,0 +1,15 @@
+from setuptools import setup, find_packages
+
+setup(
+    name="p2plending",
+    version="0.1",
+    packages=find_packages(),
+    install_requires=[
+        'pandas>=1.3.0',
+        'numpy>=1.20.0',
+        'scikit-learn>=1.0.0',
+        'xgboost>=1.5.0',
+        'matplotlib>=3.4.0',
+        'seaborn>=0.11.0',
+    ],
+)
