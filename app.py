@@ -12,8 +12,10 @@ import numpy as np
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Get the current directory (where app.py is located)
+CURRENT_DIR = Path(__file__).parent
 # Add src directory to path
-sys.path.append(str(Path(__file__).parent / 'src'))
+sys.path.append(str(CURRENT_DIR / 'src'))
 
 # Import your existing modules with error handling
 try:
@@ -24,8 +26,8 @@ except ImportError as e:
     st.error(f"Failed to import modules: {e}")
     st.stop()
 
-# Constants
-MODEL_DIR = Path('saved_models')
+# Constants - using your actual directory structure
+MODEL_DIR = CURRENT_DIR / 'saved_models'
 MODEL_DIR.mkdir(exist_ok=True)
 
 # Set page config
@@ -38,34 +40,47 @@ st.set_page_config(
 
 
 def load_css():
-    """Load custom CSS"""
+    """Load modern custom CSS"""
     st.markdown("""
     <style>
         .main {
             padding: 2rem;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f9f9fb;
         }
+
         .stButton>button {
-            background-color: #4CAF50;
+            background: linear-gradient(135deg, #4CAF50, #43a047);
             color: white;
-            font-weight: bold;
-            border-radius: 8px;
-            border: none;
-            transition: all 0.3s;
-        }
-        .stButton>button:hover {
-            background-color: #45a049;
-        }
-        .risk-card {
-            padding: 1rem;
+            font-weight: 600;
             border-radius: 10px;
-            margin: 1rem 0;
-            text-align: center;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: background 0.3s, transform 0.2s;
+            cursor: pointer;
         }
-        .very-low-risk { background-color: #d4edda; color: #155724; }
-        .low-risk { background-color: #d1ecf1; color: #0c5460; }
-        .medium-risk { background-color: #fff3cd; color: #856404; }
-        .high-risk { background-color: #f8d7da; color: #721c24; }
-        .very-high-risk { background-color: #f5c6cb; color: #721c24; }
+
+        .stButton>button:hover {
+            background: linear-gradient(135deg, #45a049, #388e3c);
+            transform: scale(1.02);
+        }
+
+        .risk-card {
+            padding: 1.25rem;
+            border-radius: 12px;
+            margin: 1.2rem 0;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: 500;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .very-low-risk { background-color: #e6f4ea; color: #1b5e20; }
+        .low-risk { background-color: #e0f7fa; color: #006064; }
+        .medium-risk { background-color: #fff9e6; color: #795548; }
+        .high-risk { background-color: #fdecea; color: #c62828; }
+        .very-high-risk { background-color: #f8d7da; color: #b71c1c; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -74,7 +89,7 @@ def load_css():
 def load_data():
     """Load and preprocess data with caching and proper error handling"""
     try:
-        data_path = Path('data') / 'accepted_2007_to_2018Q4_extracted.csv'
+        data_path = CURRENT_DIR / 'data' / 'accepted_2007_to_2018Q4_extracted.csv'
         preprocessed_path = MODEL_DIR / 'preprocessed_data.joblib'
 
         # Check if data file exists
@@ -142,7 +157,10 @@ class P2PLendingApp:
 
     def load_or_train_models(self, X_train, X_test, y_train, y_test, feature_names=None):
         """Load trained models or train new ones if not found"""
+        # Use the correct path for your saved model
         model_path = MODEL_DIR / 'trained_model.joblib'
+
+        logger.info(f"Looking for model at: {model_path}")
 
         if model_path.exists():
             try:
@@ -165,14 +183,20 @@ class P2PLendingApp:
         logger.info("Training new model...")
         model = Model()
         model.set_data(X_train, X_test, y_train, y_test)
+
+        # Train the models
         model.train_models()
 
         if feature_names is not None:
             model.feature_names = feature_names
 
         # Save the trained model
-        joblib.dump({'model': model, 'feature_names': feature_names}, model_path)
-        logger.info("Model training completed and saved")
+        try:
+            joblib.dump({'model': model, 'feature_names': feature_names}, model_path)
+            logger.info(f"Model training completed and saved to: {model_path}")
+        except Exception as e:
+            logger.warning(f"Could not save model: {e}")
+
         return model
 
     def initialize_models(self):
@@ -213,11 +237,11 @@ class P2PLendingApp:
 
 def get_risk_level_info(risk_score):
     """Get risk level information and styling"""
-    if risk_score < 200:
+    if risk_score < 300:
         return "Very Low", "very-low-risk", "✅", "This loan application appears to be very low risk."
-    elif risk_score < 400:
+    elif risk_score < 500:
         return "Low", "low-risk", "✅", "This loan application appears to be low risk."
-    elif risk_score < 600:
+    elif risk_score < 700:
         return "Medium", "medium-risk", "⚠️", "This loan application has moderate risk."
     elif risk_score < 800:
         return "High", "high-risk", "❌", "This loan application is considered high risk."
