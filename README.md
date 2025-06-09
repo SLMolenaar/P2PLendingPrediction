@@ -1,0 +1,97 @@
+# P2P Lending Risk Prediction
+
+A machine learning pipeline for predicting loan default risk in peer-to-peer lending platforms. This project implements a data processing and modeling pipeline that takes loan application data and generates risk scores for each application.
+
+## Features
+
+- **Data Processing**: Handles missing values, feature engineering, and data leakage prevention
+- **Fraud Detection**: Identifies potential fraudulent applications using anomaly detection
+- **Modeling**: Implements multiple ML models (Logistic Regression, Random Forest, XGBoost)
+- **Risk Scoring**: Generates risk scores (0-1000) for loan applications
+- **Interpretability**: Provides feature importance and model insights
+
+## Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/P2PLendingPrediction.git
+   cd P2PLendingPrediction
+   ```
+
+2. Create and activate a virtual environment (recommended):
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. Install the package in development mode:
+   ```bash
+   pip install -e .
+   ```
+
+## Data Requirements
+
+Place your loan data in the `data/` directory. The expected format is a CSV file containing loan application data with features like:
+- `loan_amnt`: Loan amount
+- `annual_inc`: Annual income
+- `emp_length`: Employment length
+- `purpose`: Loan purpose
+- `loan_status`: Target variable (e.g., 'Fully Paid', 'Charged Off')
+
+## Usage
+
+Run the main pipeline:
+```bash
+python -m src.Main
+```
+
+The pipeline will:
+1. Load and preprocess the data
+2. Perform feature engineering
+3. Train and evaluate multiple models
+4. Generate risk scores
+5. Output performance metrics and insights
+
+## Project Structure
+
+```
+P2PLendingPrediction/
+├── data/                   # Data directory (not version controlled)
+├── src/                    # Source code
+│   ├── __init__.py         # Makes src a Python package
+│   ├── Main.py             # Main pipeline
+│   ├── DataLoader.py       # Data loading and preprocessing
+│   ├── Preprocessor.py     # Feature engineering and data cleaning
+│   └── Model.py            # Model training and evaluation
+├── .gitignore             # Specifies intentionally untracked files
+├── setup.py               # Package configuration
+└── README.md              # This file
+```
+
+## Model Performance
+
+Expected performance metrics:
+- AUC-ROC: 0.65-0.85 (realistic for credit risk models)
+- Key risk factors identified:
+  - Debt-to-income ratio
+  - Credit utilization
+  - Employment stability
+  - Loan purpose
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Lending Club for the loan data
+- Scikit-learn and XGBoost teams for the ML libraries
+- Open source community for various utilities and inspiration
