@@ -1,14 +1,16 @@
 # P2P Lending Risk Prediction
 
-A machine learning pipeline for predicting loan default risk in peer-to-peer lending platforms. This project implements a data processing and modeling pipeline that takes loan application data and generates risk scores for each application.
+A machine learning pipeline and web application for predicting loan default risk in peer-to-peer lending platforms. This project includes both a data processing/modeling pipeline and an interactive web interface for risk assessment.
 
 ## Features
 
+- **Interactive Web Interface**: User-friendly dashboard for risk assessment
+- **Real-time Predictions**: Get instant risk scores for loan applications
+- **Model Insights**: View feature importance and model performance metrics
 - **Data Processing**: Handles missing values, feature engineering, and data leakage prevention
 - **Fraud Detection**: Identifies potential fraudulent applications using anomaly detection
 - **Modeling**: Implements multiple ML models (Logistic Regression, Random Forest, XGBoost)
-- **Risk Scoring**: Generates risk scores (0-1000) for loan applications
-- **Interpretability**: Provides feature importance and model insights
+- **Risk Scoring**: Generates risk scores (0-100) for loan applications
 
 ## Installation
 
@@ -21,13 +23,37 @@ A machine learning pipeline for predicting loan default risk in peer-to-peer len
 2. Create and activate a virtual environment (recommended):
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   # On Windows:
+   venv\Scripts\activate
+   # On macOS/Linux:
+   # source venv/bin/activate
    ```
 
-3. Install the package in development mode:
+3. Install the required dependencies:
    ```bash
-   pip install -e .
+   pip install -r requirements.txt
    ```
+
+## Running the Web Application
+
+1. Ensure your virtual environment is activated
+2. Run the Streamlit app:
+   ```bash
+   streamlit run app.py
+   ```
+3. The application will open automatically in your default web browser at `http://localhost:8501`
+
+## Using the Web Application
+
+1. **Predict Risk Page**:
+   - Fill in the loan application details
+   - Click "Assess Risk" to get a risk score
+   - View the risk level and recommendations
+
+2. **Model Insights Page**:
+   - View model performance metrics
+   - See feature importance
+   - Compare different model performances
 
 ## Data Requirements
 

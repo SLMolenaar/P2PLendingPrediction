@@ -170,6 +170,139 @@ class Model:
 
         return results_df
 
+    def predict_risk(self, input_data: pd.DataFrame) -> np.ndarray:
+        """
+        Predict risk score for new loan applications
+        
+        Args:
+            input_data: DataFrame containing loan application features
+            
+        Returns:
+            np.ndarray: Array of risk scores (0-1000)
+        """
+        if not self.models:
+            raise ValueError("Models must be trained first. Call train_models()")
+            
+        if not hasattr(self, 'feature_names'):
+            raise ValueError("Feature names not found. The model may not have been properly trained.")
+            
+        # Create a DataFrame with all required features and default values
+        X_pred = pd.DataFrame(index=input_data.index)
+        
+        # Add all required features with default values
+        for feature in self.feature_names:
+            if feature in input_data.columns:
+                X_pred[feature] = input_data[feature]
+            else:
+                # Set default values based on feature type/meaning
+                if feature in ['loan_amnt', 'funded_amnt', 'funded_amnt_inv']:
+                    X_pred[feature] = input_data.get('loan_amnt', 10000)
+                elif feature == 'int_rate':
+                    X_pred[feature] = input_data.get('int_rate', 10.0)
+                elif feature == 'term':
+                    term = input_data.get('term', '36 months')
+                    X_pred[feature] = int(term.split()[0]) if isinstance(term, str) else term
+                elif feature == 'annual_inc':
+                    X_pred[feature] = input_data.get('annual_inc', 60000)
+                elif feature == 'dti':
+                    X_pred[feature] = input_data.get('dti', 15.0)
+                elif feature in ['fico_range_low', 'fico_range_high']:
+                    fico = input_data.get('fico_range_high', input_data.get('fico_range_low', 700))
+                    X_pred[feature] = fico
+                elif feature in ['revol_util', 'bc_util', 'il_util', 'all_util']:
+                    X_pred[feature] = input_data.get(feature, 30.0)  # Default utilization percentage
+                elif feature in ['open_acc', 'total_acc', 'pub_rec', 'delinq_2yrs', 'inq_last_6mths']:
+                    X_pred[feature] = input_data.get(feature, 0)
+                else:
+                    X_pred[feature] = 0  # Default for other numeric features
+        
+        # Ensure all features are numeric
+        X_pred = X_pred.apply(pd.to_numeric, errors='coerce').fillna(0)
+        
+        # Ensure we only have the features the model expects
+        X_pred = X_pred[self.feature_names]
+            
+        # Get ensemble predictions
+        ensemble_proba = np.zeros(len(X_pred))
+        weights = {'logistic_regression': 0.3, 'random_forest': 0.3, 'xgboost': 0.4}
+        
+        for name, model in self.models.items():
+            # Scale features for logistic regression
+            if name == 'logistic_regression':
+                X_input = self.scaler.transform(X_pred)
+            else:
+                X_input = X_pred
+                
+            proba = model.predict_proba(X_input)[:, 1]
+            ensemble_proba += weights[name] * proba
+            
+        # More aggressive non-linear scaling to emphasize higher probabilities
+        # This will create a steeper curve for higher probabilities
+        risk_scores = np.clip((np.power(ensemble_proba, 0.25) * 1300 - 300).astype(int), 0, 1000)
+        
+        features = {}
+        for col in ['dti', 'int_rate', 'loan_amnt', 'annual_inc', 'fico_range_high', 'term']:
+            if col in input_data.columns:
+                features[col] = input_data[col].iloc[0]
+        
+        adjustments = []
+        # DTI adjustment (higher DTI = higher risk, lower DTI = much safer)
+        if 'dti' in features:
+            if features['dti'] < 12:
+                dti_adj = -150  # Strong reward for low DTI
+            else:
+                dti_adj = min(max((features['dti'] - 12) * 13, 0), 220)
+            adjustments.append(dti_adj)
+        # Interest rate adjustment (higher rate = higher risk, low rate = reward)
+        if 'int_rate' in features:
+            if features['int_rate'] < 8:
+                rate_adj = -100
+            else:
+                rate_adj = min(max((features['int_rate'] - 8) * 12, 0), 170)
+            adjustments.append(rate_adj)
+        # Loan amount adjustment (higher loan = higher risk, low loan = reward)
+        if 'loan_amnt' in features:
+            if features['loan_amnt'] < 12000:
+                loan_adj = -80
+            else:
+                loan_adj = min(max((features['loan_amnt'] - 12000) / 80, 0), 120)
+            adjustments.append(loan_adj)
+        # Income adjustment (higher income = lower risk)
+        if 'annual_inc' in features:
+            if features['annual_inc'] > 85000:
+                inc_adj = -120
+            else:
+                inc_adj = min(max((100000 - features['annual_inc']) / 350, 0), 140)
+            adjustments.append(inc_adj)
+        # FICO score adjustment (higher score = lower risk, low score = strong penalty)
+        if 'fico_range_high' in features:
+            if features['fico_range_high'] > 780:
+                fico_adj = -170
+            else:
+                fico_adj = min(max((700 - features['fico_range_high']) * 1.2, 0), 220)
+            adjustments.append(fico_adj)
+        # Term adjustment (longer term = higher risk)
+        if 'term' in features:
+            term_months = int(str(features['term']).split()[0]) if isinstance(features['term'], str) else features['term']
+            term_adj = 70 if term_months > 36 else -30
+            adjustments.append(term_adj)
+        # Calculate final adjustment (average)
+        if adjustments:
+            risk_adjustment = sum(adjustments) / len(adjustments)
+            risk_scores = np.clip(risk_scores + risk_adjustment, 0, 1000)
+        # Clamp very strong profiles to max 300
+        if all([
+            features.get('fico_range_high', 0) > 780,
+            features.get('dti', 100) < 10,
+            features.get('annual_inc', 0) > 85000,
+            features.get('loan_amnt', 99999) < 12000,
+            features.get('int_rate', 100) < 8,
+            features.get('term', '36 months') == '36 months'
+        ]):
+            risk_scores = np.clip(risk_scores, 0, 300)
+
+        return risk_scores
+        
     def generate_insights(self) -> None:
         """Generate business insights and recommendations"""
         print("\n=== BUSINESS INSIGHTS (NO DATA LEAKAGE) ===")
