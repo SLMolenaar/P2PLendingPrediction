@@ -329,44 +329,66 @@ class Model:
         # Make a copy of input data to avoid modifying the original
         input_data = input_data.copy()
         
-        # If feature names are generic (feature_0, feature_1, etc.), we need to map them
+        # Create a mapping from human-readable to generic feature names if needed
         if all(f.startswith('feature_') for f in self.feature_names):
-            # Create a mapping from original feature names to generic feature names
-            # This assumes the order of features in the input matches the training order
-            if len(input_data.columns) != len(self.feature_names):
-                raise ValueError(f"Number of input features ({len(input_data.columns)}) "
-                               f"does not match number of training features ({len(self.feature_names)})")
+            # Model was trained with generic feature names, but we have human-readable ones
+            # We'll need to map the input features to the generic names
             
-            # Rename columns to match the generic feature names used during training
-            input_data.columns = self.feature_names[:len(input_data.columns)]
-        
-        # Ensure all required features are present in input_data
-        missing_features = set(self.feature_names) - set(input_data.columns)
-        if missing_features:
-            # If we have some features but not all, try to map them by position
-            if len(input_data.columns) == len(self.feature_names):
-                input_data.columns = self.feature_names
-                missing_features = set()
+            # Create a new DataFrame with the expected feature names
+            X_pred = pd.DataFrame(0, index=input_data.index, columns=self.feature_names)
             
-            if missing_features:
-                raise ValueError(f"Missing required features in input data: {missing_features}")
+            # Define the mapping from human-readable to generic feature names
+            # This mapping should match the order in which features were used during training
+            feature_mapping = {
+                'loan_amnt': 'feature_0',
+                'term': 'feature_1',
+                'int_rate': 'feature_2',
+                'annual_inc': 'feature_3',
+                'dti': 'feature_4',
+                'fico_range_high': 'feature_5',
+                'fico_range_low': 'feature_6',
+                'revol_util': 'feature_7',
+                'open_acc': 'feature_8',
+                'total_acc': 'feature_9',
+                'pub_rec': 'feature_10',
+                'delinq_2yrs': 'feature_11',
+                'inq_last_6mths': 'feature_12'
+            }
+            
+            # Map input features to generic feature names
+            for human_name, generic_name in feature_mapping.items():
+                if human_name in input_data.columns and generic_name in X_pred.columns:
+                    X_pred[generic_name] = input_data[human_name]
+        else:
+            # Model was trained with human-readable names, use as is
+            X_pred = input_data.copy()
+            
+            # Ensure all expected features are present
+            missing_features = set(self.feature_names) - set(X_pred.columns)
+            for feature in missing_features:
+                # Set default values for missing features
+                if 'fico' in feature.lower():
+                    X_pred[feature] = 680
+                elif any(util in feature for util in ['util', 'ratio']):
+                    X_pred[feature] = 30.0
+                elif any(acc in feature for acc in ['acc', 'account']):
+                    X_pred[feature] = 10
+                else:
+                    X_pred[feature] = 0
         
-        # Keep only the features that were used during training
-        input_data = input_data[self.feature_names]
-
-        # Enhanced feature preparation
-        X_pred = self._prepare_prediction_features(input_data)
-        
-        # Ensure the features are in the same order as during training
+        # Ensure the features are in the correct order
         X_pred = X_pred[self.feature_names]
-
+        
+        # Enhanced feature preparation
+        X_pred = self._prepare_prediction_features(X_pred)
+        
         # Get ensemble predictions using calibrated models if available
         ensemble_proba = self._get_ensemble_predictions(X_pred)
 
         # Transform to risk scores
         base_risk_scores = self._transform_probabilities_to_risk_scores(ensemble_proba)
         
-        # Apply enhanced business logic adjustments
+        # Apply enhanced business logic adjustments using the original input data
         adjusted_risk_scores = self._apply_business_adjustments(base_risk_scores, input_data)
 
         return adjusted_risk_scores
