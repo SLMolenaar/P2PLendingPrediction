@@ -38,6 +38,23 @@ Place your loan data in the `data/` directory. The expected format is a CSV file
 - `purpose`: Loan purpose
 - `loan_status`: Target variable (e.g., 'Fully Paid', 'Charged Off')
 
+### Required Features:
+- `loan_amnt`: Requested loan amount ($)
+- `annual_inc`: Annual income ($)
+- `emp_length`: Employment length (years)
+- `int_rate`: Interest rate of the loan
+- `dti`: Debt-to-income ratio
+- `revol_util`: Revolving line utilization rate
+- `purpose`: Loan purpose category
+- `loan_status`: Target variable (e.g., 'Fully Paid', 'Charged Off')
+
+### Example Data Format:
+```csv
+loan_amnt,annual_inc,emp_length,int_rate,dti,revol_util,purpose,loan_status
+10000,75000,5,12.5,18.5,45,debt_consolidation,Fully Paid
+5000,45000,2,15.2,22.1,67,credit_card,Charged Off
+```
+
 ## Usage
 
 Run the main pipeline:
