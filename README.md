@@ -14,7 +14,7 @@ A machine learning pipeline for predicting loan default risk in peer-to-peer len
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/P2PLendingPrediction.git
+   git clone https://github.com/SLMolenaar/P2PLendingPrediction.git
    cd P2PLendingPrediction
    ```
 
@@ -78,20 +78,6 @@ Expected performance metrics:
   - Employment stability
   - Loan purpose
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## Acknowledgments
 
 - Lending Club for the loan data
-- Scikit-learn and XGBoost teams for the ML libraries
-- Open source community for various utilities and inspiration
