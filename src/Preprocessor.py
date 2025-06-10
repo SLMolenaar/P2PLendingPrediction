@@ -19,6 +19,7 @@ class Preprocessor:
         self.scaler = StandardScaler()
         self.label_encoders = {}
         self.anomaly_detector = None
+        self.feature_names = None
 
         # Define features available at loan origination (NO DATA LEAKAGE)
         self.pre_approval_features = [
@@ -193,6 +194,7 @@ class Preprocessor:
         y = df['default']
 
         print(f"[INFO] Final feature set: {len(X.columns)} features")
+        print(f"[INFO] Features: {list(X.columns)[:10]}{'...' if len(X.columns) > 10 else ''}")
 
         # Handle categorical variables
         categorical_cols = X.select_dtypes(include=['object']).columns
@@ -214,13 +216,18 @@ class Preprocessor:
         # Convert all to numeric
         X = X.apply(pd.to_numeric, errors='coerce').fillna(0)
 
-        # Split data
-        X_train, X_test, y_train, y_test = train_test_split(
+        # Store feature names BEFORE converting to numpy arrays
+        self.feature_names = list(X.columns)
+        print(f"[INFO] Stored feature names: {self.feature_names[:5]}{'...' if len(self.feature_names) > 5 else ''}")
+
+        # Split data - keep as DataFrames initially
+        X_train_df, X_test_df, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42, stratify=y
         )
 
-        # Store feature names for later use
-        self.feature_names = X.columns.tolist()
+        # Convert to numpy arrays for compatibility
+        X_train = X_train_df.values
+        X_test = X_test_df.values
 
         print(f"Training set: {X_train.shape}")
         print(f"Test set: {X_test.shape}")
